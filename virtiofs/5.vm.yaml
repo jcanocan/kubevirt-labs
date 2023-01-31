@@ -1,0 +1,58 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/vm: hostpath-vm
+  name: hostpath
+spec:
+  running: false
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: hostpath
+        kubevirt.io/vm: hostpath
+    spec:
+      domain:
+        cpu:
+          cores: 1
+          sockets: 1
+          threads: 1
+        devices:
+          filesystems:
+            - name: vm-hostpath
+              virtiofs: {}
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - containerDisk:
+            image: quay.io/containerdisks/fedora:36
+          name: containerdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              chpasswd:
+                expire: false
+              password: password
+              user: fedora
+              bootcmd:
+                - ["mount", "-t", "virtiofs",  "vm-hostpath", "/mnt"]
+          name: cloudinitdisk
+        - name: vm-hostpath
+          persistentVolumeClaim:
+            claimName: example-claim

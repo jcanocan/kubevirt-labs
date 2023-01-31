@@ -1,0 +1,69 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/vm: fedora-vm-1
+  name: fedora-1
+spec:
+  running: false
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-1
+        kubevirt.io/vm: fedora-1
+      annotations:
+        descheduler.alpha.kubernetes.io/evict: "true"
+    spec:
+      domain:
+        cpu:
+          cores: 1
+          sockets: 1
+          threads: 1
+        devices:
+          filesystems:
+            - name: vm-hostpath
+              virtiofs: {}
+            - name: config-disk
+              virtiofs: {}
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+            - disk: {}
+              name: config-disk
+              serial: CVLY623300HK240D
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - containerDisk:
+            image: quay.io/containerdisks/fedora:36
+          name: containerdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              chpasswd:
+                expire: false
+              password: password
+              user: fedora
+              bootcmd:
+                - "mkdir /mnt/config-vm"
+                - "mount /dev/$(lsblk --nodeps -no name,serial | grep CVLY623300HK240D | cut -f1 -d' ') /mnt/config-vm"
+          name: cloudinitdisk
+        - configMap:
+            name: config-vm
+          name: config-disk
+        - name: vm-hostpath
+          persistentVolumeClaim:
+            claimName: example-claim
