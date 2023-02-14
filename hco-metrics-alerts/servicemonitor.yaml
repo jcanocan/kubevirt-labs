@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: kubevirt-hyperconverged
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: hco-operator
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 4.12.0
+  name: kubevirt-hyperconverged-operator-metrics
+  namespace: kubevirt-hyperconverged
+spec:
+  endpoints:
+  - bearerTokenSecret:
+      key: ""
+    port: http-metrics
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      app: kubevirt-hyperconverged
+      app.kubernetes.io/component: monitoring
+      app.kubernetes.io/managed-by: hco-operator
+      app.kubernetes.io/part-of: hyperconverged-cluster
+      app.kubernetes.io/version: 4.12.0

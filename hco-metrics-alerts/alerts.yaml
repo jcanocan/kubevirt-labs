@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app: kubevirt-hyperconverged
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: hco-operator
+    app.kubernetes.io/part-of: hyperconverged-cluster
+  name: kubevirt-hyperconverged-prometheus-rule
+  namespace: kubevirt-hyperconverged
+spec:
+  groups:
+  - name: kubevirt.hyperconverged.rules
+    rules:
+    - alert: KubevirtHyperconvergedNodeImagesOverflow
+      annotations:
+        description: Number of images in {{ $labels.node }}
+        runbook_url: https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedNodeImagesOverflow
+        summary: '{{ $value }} Total amount of images in nodes'
+      expr: kubevirt_hco_number_node_images >= 50
+      labels:
+        kubernetes_operator_component: hyperconverged-cluster-operator
+        kubernetes_operator_part_of: kubevirt
+        severity: warning
+    - alert: KubevirtHyperconvergedClusterOperatorCRModification
+      annotations:
+        description: Out-of-band modification for {{ $labels.component_name }}.
+        runbook_url: https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification
+        summary: '{{ $value }} out-of-band CR modifications were detected in the last
+          10 minutes.'
+      expr: sum by(component_name) ((round(increase(kubevirt_hco_out_of_band_modifications_count[10m]))>0
+        and kubevirt_hco_out_of_band_modifications_count offset 10m) or (kubevirt_hco_out_of_band_modifications_count
+        != 0 unless kubevirt_hco_out_of_band_modifications_count offset 10m))
+      labels:
+        kubernetes_operator_component: hyperconverged-cluster-operator
+        kubernetes_operator_part_of: kubevirt
+        severity: warning
+    - alert: KubevirtHyperconvergedClusterOperatorUSModification
+      annotations:
+        description: unsafe modification for the {{ $labels.annotation_name }} annotation
+          in the HyperConverged resource.
+        runbook_url: https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification
+        summary: '{{ $value }} unsafe modifications were detected in the HyperConverged
+          resource.'
+      expr: sum by(annotation_name) ((kubevirt_hco_unsafe_modification_count)>0)
+      labels:
+        kubernetes_operator_component: hyperconverged-cluster-operator
+        kubernetes_operator_part_of: kubevirt
+        severity: info
+    - alert: KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert
+      annotations:
+        description: the installation was not completed; the HyperConverged custom
+          resource is missing. In order to complete the installation of the Hyperconverged
+          Cluster Operator you should create the HyperConverged custom resource.
+        runbook_url: https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert
+        summary: the installation was not completed; to complete the installation,
+          create a HyperConverged custom resource.
+      expr: kubevirt_hco_hyperconverged_cr_exists == 0
+      for: 1h
+      labels:
+        kubernetes_operator_component: hyperconverged-cluster-operator
+        kubernetes_operator_part_of: kubevirt
+        severity: info
+    - expr: sum(kube_pod_container_resource_requests{resource="cpu"} and on (pod)
+        kube_pod_status_phase{phase="Running"} * on (pod) group_left kube_pod_labels{
+        label_kubevirt_io="virt-launcher"} > 0)
+      record: cluster:vmi_request_cpu_cores:sum

@@ -21,7 +21,7 @@ spec:
           threads: 1
         devices:
           filesystems:
-            - name: config-disk
+            - name: sv-disk
               virtiofs: {}
           disks:
             - name: containerdisk
@@ -56,6 +56,6 @@ spec:
                 - "mkdir /mnt/config-vm"
                 - "mount /dev/$(lsblk --nodeps -no name,serial | grep CVLY623300HK240D | cut -f1 -d' ') /mnt/config-vm"
           name: cloudinitdisk
-        - configMap:
-            name: config-vm
-          name: config-disk
+        - name: sv-disk
+          serviceAccount:
+            serviceAccountName: service-account-example
