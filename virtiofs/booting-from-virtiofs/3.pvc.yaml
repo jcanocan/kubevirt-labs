@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: example-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "example-storage-class"
+  resources:
+    requests:
+      storage: 10Gi

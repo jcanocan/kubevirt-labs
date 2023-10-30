@@ -1,0 +1,36 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/vm: hostpath-vm
+  name: hostpath
+spec:
+  running: false
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: hostpath
+        kubevirt.io/vm: hostpath
+    spec:
+      domain:
+        cpu:
+        devices:
+          filesystems:
+            - name: vm-disk-img
+              virtiofs: {}
+        firmware:
+          kernelBoot:
+            container:
+              image: quay.io/containerdisks/centos-stream:8
+              initrdPath: /boot/initramfs-4.18.0-489.el8.x86_64.img
+              kernelPath: /boot/vmlinuz-4.18.0-489.el8.x86_64
+              imagePullPolicy: Always
+              imagePullSecret: IfNotPresent
+            kernelArgs: "console=ttyS0 root=virtiofs:vm-disk-img"
+        resources:
+          requests:
+            memory: 1Gi
+      volumes:
+        - name: vm-hostpath
+          persistentVolumeClaim:
+            claimName: example-claim
